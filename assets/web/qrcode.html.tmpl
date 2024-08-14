@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Record time</title>
+    </head>
+
+    <body>
+        Who are you?
+        
+        <form>
+            <input hidden name="qrcode" value="{{ .qrcode }}">
+            {{ range . }}
+            <input type="radio-button" id="{{ .team }}">
+            {{ end }}
+            <input type="submit">
+        </form>
+    </body>
+
+</html> 

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -33,9 +34,33 @@ type TeamTime struct {
 }
 
 type App struct {
-	mx      sync.Mutex
-	Teams   map[string]bool
-	Records map[string][]TeamTime // QRcode to TeamTime
+	mx             sync.Mutex
+	Teams          map[string]bool
+	Records        map[string][]TeamTime // QRcode to TeamTime
+	RecordTimeTmpl *template.Template
+	QRCodeTmpl     *template.Template
+}
+
+func (ap *App) loadTemplates() error {
+	{
+		tmpl, err := template.ParseFiles("assets/web/record-time.html.tmpl")
+		if err != nil {
+			return err
+		}
+
+		ap.RecordTimeTmpl = tmpl
+	}
+
+	{
+		tmpl, err := template.ParseFiles("assets/web/qrcode.html.tmpl")
+		if err != nil {
+			return err
+		}
+
+		ap.QRCodeTmpl = tmpl
+	}
+
+	return nil
 }
 
 func (ap *App) ListTeams() []string {
@@ -154,6 +179,30 @@ func (ap *App) HandleDeleteTeam(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, `team %q succesfully deleted`, tm)
 }
 
+func (ap *App) HandleRecordTime(w http.ResponseWriter, r *http.Request) {
+	tm := r.URL.Query().Get("team")
+	if tm == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, `required arg "team"`)
+	}
+
+	qr := r.URL.Query().Get("qrcode")
+	if qr == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, `required arg "qrcode"`)
+	}
+
+	err := ap.RecordTeamTime(qr, tm)
+	if err != nil {
+		log.Printf(`recording team time for team %q code %q: %s`, tm, qr, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// renderer html template success
+	fmt.Fprintf(w, "")
+}
+
 func main() {
 	log.Println("Server started")
 
@@ -162,12 +211,24 @@ func main() {
 		Records: map[string][]TeamTime{},
 	}
 
+	err := app.loadTemplates()
+	if err != nil {
+		log.Print("loading templates: %s", err)
+		panic("failed loading templates")
+	}
+	log.Print("templates loaded")
+
 	http.DefaultServeMux.HandleFunc("/list-records", app.HandleListRecord)
 	http.DefaultServeMux.HandleFunc("/clear-records", app.HandleClearRecords)
 	http.DefaultServeMux.HandleFunc("/list-teams", app.HandleListTeams)
 	http.DefaultServeMux.HandleFunc("/add-team", app.HandleAddTeam)
 	http.DefaultServeMux.HandleFunc("/delete-team", app.HandleDeleteTeam)
 	http.DefaultServeMux.HandleFunc("/clear-teams", app.HandleClearTeams)
+	http.DefaultServeMux.HandleFunc("/record-time", app.HandleRecordTime)
+
+	http.DefaultServeMux.HandleFunc("/healthcheck", func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(w, "gt5")
+	})
 
 	// TODO: Add handle to accept QR codes - probably main handle
 	// TODO: Add handle to draw recorded time of found QR
@@ -182,7 +243,7 @@ func main() {
 		port = "80"
 	}
 
-	err := http.ListenAndServe(fmt.Sprintf(":%s", port), http.DefaultServeMux)
+	err = http.ListenAndServe(fmt.Sprintf(":%s", port), http.DefaultServeMux)
 	if err != nil {
 		log.Printf("shutting server - %s", err)
 	}
