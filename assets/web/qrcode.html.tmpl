@@ -7,12 +7,11 @@
     <body>
         Who are you?
         
-        <form>
-            <input hidden name="qrcode" value="{{ .qrcode }}">
-            {{ range . }}
-            <input type="radio-button" id="{{ .team }}">
+        <form action="/record-time">
+            <input hidden name="qrcode" value="{{ .QRCode }}">
+            {{ range .Teams }}
+            <input type="submit" value="{{ . }}">
             {{ end }}
-            <input type="submit">
         </form>
     </body>
 

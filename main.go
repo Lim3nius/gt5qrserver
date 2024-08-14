@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -203,6 +205,14 @@ func (ap *App) HandleRecordTime(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "")
 }
 
+var qrcodeReStr = fmt.Sprintf(`^/(%s)$`, strings.Join(maps.Keys(QRCodes), "|"))
+var qrcodeRe = regexp.MustCompile(qrcodeReStr)
+
+type QRCodeTemplData struct {
+	QRCode string
+	Teams  []string
+}
+
 func main() {
 	log.Println("Server started")
 
@@ -230,12 +240,33 @@ func main() {
 		fmt.Fprint(w, "gt5")
 	})
 
-	// TODO: Add handle to accept QR codes - probably main handle
 	// TODO: Add handle to draw recorded time of found QR
 
+	log.Printf("qrregexp %q", qrcodeReStr)
+
+	// TODO: Add handle to accept QR codes - probably main handle
 	http.DefaultServeMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("handled message to: %s", r.URL.Path)
-		fmt.Fprint(w, "gt5 night game")
+		path := r.URL.EscapedPath()
+		log.Printf("handled message to: %s", path)
+
+		if !qrcodeRe.MatchString(path) {
+			fmt.Fprint(w, "nothing here")
+			return
+		}
+
+		qrcode, _ := strings.CutPrefix(path, "/")
+		teams := app.ListTeams()
+
+		err := app.QRCodeTmpl.Execute(w, &QRCodeTemplData{
+			QRCode: qrcode,
+			Teams:  teams,
+		})
+
+		if err != nil {
+			log.Printf("executing template: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
 	})
 
 	port := os.Getenv("PORT")
