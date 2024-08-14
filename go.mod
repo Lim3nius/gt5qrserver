@@ -1,3 +1,3 @@
 module gt5qrserver
 
-go 1.18
+go 1.22
