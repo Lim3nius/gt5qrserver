@@ -2,20 +2,104 @@
 <html>
     <head>
         <title>Record time</title>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <style>
+            :root {
+                --vertical-space: 1.6rem
+            }
+            @keyframes bg-paralax {
+                from {
+                    background-position: 0%;
+                }
+                to {
+                    background-position: 90%;
+                }
+            }
+            body {
+                /* background-color: #252525; */
+                background-color: #04091d;
+                
+                font-family: sans-serif;
+                color: whitesmoke;
+                margin: 0;
+                padding: 1rem;
+                height: calc(100vh - 2rem);
+
+                background-image: url('/assets/web/pixel-night.jpg');
+                background-repeat: no-repeat;
+                background-position: 0%;
+                background-size: auto 80%;
+
+                animation: bg-paralax 20s infinite;
+                animation-direction: alternate;
+                animation-timing-function: ease-in-out;
+            }
+
+            h1 {
+                margin:  0 0 var(--vertical-space);
+            }
+
+            .teams {
+                display: flex;
+                flex-direction: column;
+                gap: 1.6rem;
+                margin-bottom: var(--vertical-space);
+
+                font-size: 1.6rem;
+            }
+
+            .teamWrap {
+                display: flex;
+                gap: 0.8rem;
+                align-items: center;
+            }
+
+            .teamWrap input[type="radio"] {
+                width: 1.25rem;
+                height: 1.25rem;
+            }
+
+            .submitContainer {
+                display: flex;
+                justify-content: center;
+                position: absolute;
+                bottom: 10rem;
+                width: calc(100% - 2rem);
+            }
+
+            input[type="submit"] {
+                border: solid 0.1rem #606060;
+                border-radius: 0.8rem;
+                background-color: #2e2e50b0;
+                color: white;
+                font-size: 2.4rem;
+                line-height: 120%;
+                padding: 0.8rem 2.4rem;
+            }
+
+            input[type="submit"]:active {
+                background-color: #1e1e36;
+            }
+        </style>
     </head>
 
     <body>
-        Who are you?
-        
+        <h1>Who are you?</h1>
+
         <form method="post">
             <input type="hidden" name="qrcode" value="{{ $.QRCode }}" />
-            {{ range $tm := .Teams }}
-            <div>
-                <input type="radio" name="team" value="{{ $tm }}" id="radio-{{ $tm }}" />
-                <label for="radio-{{ $tm }}"> {{ $tm }} </label>
+            <div class="teams">
+                {{ range $tm := .Teams }}
+                <div class="teamWrap">
+                    <input required type="radio" name="team" value="{{ $tm }}" id="radio-{{ $tm }}" />
+                    <label for="radio-{{ $tm }}"> {{ $tm }} </label>
+                </div>
+                {{ end }}
             </div>
-            {{ end }}
-            <input type="submit" formaction="/record-time" value="found it!" />
+            <div class="submitContainer">
+                <input type="submit" formaction="/record-time" value="found it!" />
+            </div>
         </form>
     </body>
 

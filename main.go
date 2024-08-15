@@ -11,9 +11,13 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"embed"
 
 	"golang.org/x/exp/maps"
 )
+
+//go:embed assets/web/*.jpg
+var assets embed.FS
 
 var QRCodes = map[string]bool{
 	"4nj92jh": true,
@@ -246,6 +250,7 @@ func main() {
 	http.DefaultServeMux.HandleFunc("/delete-team", app.HandleDeleteTeam)
 	http.DefaultServeMux.HandleFunc("/clear-teams", app.HandleClearTeams)
 	http.DefaultServeMux.HandleFunc("/record-time", app.HandleRecordTime)
+	http.DefaultServeMux.Handle("/assets/", http.FileServer(http.FS(assets)))
 
 	http.DefaultServeMux.HandleFunc("/healthcheck", func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(w, "gt5")
