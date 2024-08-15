@@ -99,11 +99,11 @@ func (ap *App) RecordTeamTime(qrcode, team string) error {
 	ap.mx.Lock()
 	defer ap.mx.Unlock()
 
-	slc, found := ap.Records[qrcode]
-	if !found {
+	if _, found := QRCodes[qrcode]; !found {
 		return fmt.Errorf("qrcode not found: %s", qrcode)
 	}
 
+	slc := ap.Records[qrcode]
 	ap.Records[qrcode] = append(slc, rec)
 	return nil
 }
@@ -181,20 +181,29 @@ func (ap *App) HandleDeleteTeam(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, `team %q succesfully deleted`, tm)
 }
 
+type RecordTimeTmplData struct {
+	Team string
+}
+
 func (ap *App) HandleRecordTime(w http.ResponseWriter, r *http.Request) {
-	tm := r.URL.Query().Get("team")
+	err := r.ParseForm()
+	if err != nil {
+		log.Printf("record time parsing form: %s", err)
+	}
+
+	tm := r.Form.Get("team")
 	if tm == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, `required arg "team"`)
 	}
 
-	qr := r.URL.Query().Get("qrcode")
+	qr := r.Form.Get("qrcode")
 	if qr == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, `required arg "qrcode"`)
 	}
 
-	err := ap.RecordTeamTime(qr, tm)
+	err = ap.RecordTeamTime(qr, tm)
 	if err != nil {
 		log.Printf(`recording team time for team %q code %q: %s`, tm, qr, err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -202,7 +211,9 @@ func (ap *App) HandleRecordTime(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// renderer html template success
-	fmt.Fprintf(w, "")
+	ap.RecordTimeTmpl.Execute(w, &RecordTimeTmplData{
+		Team: tm,
+	})
 }
 
 var qrcodeReStr = fmt.Sprintf(`^/(%s)$`, strings.Join(maps.Keys(QRCodes), "|"))
@@ -223,7 +234,7 @@ func main() {
 
 	err := app.loadTemplates()
 	if err != nil {
-		log.Print("loading templates: %s", err)
+		log.Printf("loading templates: %s", err)
 		panic("failed loading templates")
 	}
 	log.Print("templates loaded")
