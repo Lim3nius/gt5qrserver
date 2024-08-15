@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -8,10 +9,10 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
-	"embed"
 
 	"golang.org/x/exp/maps"
 )
@@ -72,7 +73,9 @@ func (ap *App) loadTemplates() error {
 func (ap *App) ListTeams() []string {
 	ap.mx.Lock()
 	defer ap.mx.Unlock()
-	return maps.Keys(ap.Teams)
+	teams := maps.Keys(ap.Teams)
+	sort.Strings(teams)
+	return teams
 }
 
 func (ap *App) AddTeam(name string) {
