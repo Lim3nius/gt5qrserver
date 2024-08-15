@@ -26,3 +26,12 @@ setup-prod:
 
 list-prod-teams:
 	curl "$(PROD_DOMAIN)/list-teams"
+
+list-prod-records:
+	curl "$(PROD_DOMAIN)/list-records"
+
+prod-check:
+	curl "$(PROD_DOMAIN)/4nj92jh"
+
+clear-prod-records:
+	curl "$(PROD_DOMAIN)/clear-records"
